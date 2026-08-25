@@ -1,0 +1,3 @@
+# MATLAB App Designer packages are binary.
+*.mlapp binary
+

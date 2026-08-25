@@ -1,0 +1,43 @@
+# MATLAB autosave / generated files
+*.asv
+*.autosave
+*.m~
+slprj/
+codegen/
+*.mex*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Data and generated results
+Data/
+data/
+raw_data/
+input/
+inputs/
+output/
+outputs/
+results/
+result/
+test_result/
+Default_save_folder/
+
+# Imaging / large experiment data
+*.tif
+*.tiff
+*.ome.tif
+*.ome.tiff
+
+# Common run outputs
+*defect_summary*.xlsx
+*defects_data*.mat
+*annotations_ROI_filtered.mat
+Fused_RGB.tif.mat
+
+# Logs/temp
+*.log
+*.tmp
+*.bak
