@@ -2,10 +2,7 @@ function solve_widefield_qBRM_folder(folder_loc, varargin)
    
     
    cd(folder_loc)
-   addpath("C:\Users\BMO-ADMIN-03\Documents\BRM\Functions\qBRM")
-   addpath("C:\Users\BMO-ADMIN-03\Documents\BRM\Functions")
-   % load cmap for RGB image creation
-    cmap = load('cmap_v3.mat').cmap;       
+   % load cmap for RGB image creation      
 
     cd(folder_loc)
     files = dir('*.tif'); 
@@ -71,12 +68,35 @@ function solve_widefield_qBRM_folder(folder_loc, varargin)
         y = toc;
         fprintf('Loaded Image ("%s") %5.2f seconds\n', files(i).name, y)
         img = single(img);
+        
+        %% NEW: detect intentionally black ROI tile
+        isBlackTile = all(img(:) == 0);
+
+        if isBlackTile        
+            fprintf('Black input detected. Saving black qBRM outputs.\n');
+        
+            output_size = size(img(:,:,1));
+        
+            trans_norm       = zeros(output_size, 'single');
+            phi      = zeros(output_size, 'single');
+            A        = zeros(output_size, 'single');
+            RGB_norm = zeros([output_size 3], 'single');
+
+            imwrite(im2uint8(RGB_norm), fullfile(folder_loc,'qBRM','RGB_norm', sprintf('RGB_norm_%03d.tif',img_num)));       
+            saveastiff(im2single(phi), fullfile(folder_loc,'qBRM','phi', sprintf('phi_%03d.tif',img_num)));       
+            saveastiff(im2single(A), fullfile(folder_loc,'qBRM','Ret', sprintf('ret_%03d.tif',img_num)));
+            imwrite(im2uint16(trans_norm), fullfile(folder_loc,'qBRM','trans', sprintf('trans_normalized_%03d.tif',img_num)));       
+         
+            % Skip the rest of this loop
+            continue
+        end
+
         if gpuDetected
             img = single(gpuArray(img));
         end
         img = img-ff;
 
-        cd('qBRM')
+
         if length(size(img)) > 3
             % new code for doign gpu calculations
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -96,11 +116,9 @@ function solve_widefield_qBRM_folder(folder_loc, varargin)
             % end
             %[A, RGB_norm, phi] = analyze_qBRM_zstack(img, phi_shift);
             %write_zstack(A,sprintf('Ret/ret_%03d.tif',i));
-            write_zstack(im2uint8(RGB_norm),sprintf('RGB_norm/RGB_norm_%03d.tif',img_num));
-%             imwrite(single(phi),sprintf('phi/phi_%03d.tif',i));
-            save_tiff(im2single(phi),sprintf('phi/phi_%03d.tif',img_num));
-            cd('Ret')
-            save_tiff(im2single(A),sprintf('ret_%03d.tif',img_num));
+            write_zstack(im2uint8(RGB_norm), fullfile(folder_loc,'qBRM','RGB_norm', sprintf('RGB_norm_%03d.tif',img_num)));
+            save_tiff(im2single(phi), fullfile(folder_loc,'qBRM','phi', sprintf('phi_%03d.tif',img_num)));
+            save_tiff(im2single(A), fullfile(folder_loc,'qBRM','Ret', sprintf('ret_%03d.tif',img_num)));
 
 %%%%% Uncomment for transmittance
 %%%%%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -109,15 +127,9 @@ function solve_widefield_qBRM_folder(folder_loc, varargin)
             %     ff_images = 1;
             % end
             % 
-            cd(files(i).folder)
-            cd('qBRM')
-            cd('trans')
 
             trans_norm = rescale(I0./ff_I0);
-            %write_zstack(uint8(255*mat2gray()), sprintf('trans_background_%03d.tif',i)) 
-            write_zstack(im2uint16(trans_norm), sprintf('trans_normalized_%03d.tif',i)) 
-            %write_zstack(uint8(I0), sprintf('transmittance_%03d.tif',i))
-            %write_zstack(uint8(trans_scale_factor.*mean2((1/3)*sum(ff_images,3)).*I0./((1/3).*sum(ff_images,3))), sprintf('transmittance_corrected_%03d.tif',i))
+            write_zstack(im2uint16(trans_norm), fullfile(folder_loc,'qBRM','trans', sprintf('trans_normalized_%03d.tif',i))); 
 %%%%%~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
             else
             %[I0, phi, A, RGB_norm] = qBRM_solve_gpu(img, phi_shift);
@@ -128,20 +140,14 @@ function solve_widefield_qBRM_folder(folder_loc, varargin)
             %[I0, phi, A, RGB_norm] = qBRM_solve_gpu(img);
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             [I0, phi, A, RGB_norm] = analytical_qBRM_gpu_all(img, ff_I0);
-            imwrite(im2uint8(RGB_norm),sprintf('RGB_norm/RGB_norm_%03d.tif',img_num));
-            %imwrite(single(phi),sprintf('phi/phi_%03d.tif',i));
-            saveastiff(im2single(phi),sprintf('phi/phi_%03d.tif',img_num));
-            cd('Ret')
-            saveastiff(im2single(A),sprintf('ret_%03d.tif',img_num));
+            imwrite(im2uint8(RGB_norm), fullfile(folder_loc,'qBRM','RGB_norm', sprintf('RGB_norm_%03d.tif',img_num)));
+            saveastiff(im2single(phi), fullfile(folder_loc,'qBRM','phi', sprintf('phi_%03d.tif',img_num)));
+            saveastiff(im2single(A), fullfile(folder_loc,'qBRM','Ret', sprintf('ret_%03d.tif',img_num)));
 
             % Save transmittance
-            cd(files(i).folder)
-            cd('qBRM')
-            cd('trans')
 
             trans_norm = rescale(I0./ff_I0);
-            %write_zstack(uint8(255*mat2gray()), sprintf('trans_background_%03d.tif',i)) 
-            imwrite(im2uint16(trans_norm), sprintf('trans_normalized_%03d.tif',i)) 
+            imwrite(im2uint16(trans_norm), fullfile(folder_loc,'qBRM','trans', sprintf('trans_normalized_%03d.tif',i))) 
         end
     end
     disp('########### Finished qBRM Analysis ###########')
