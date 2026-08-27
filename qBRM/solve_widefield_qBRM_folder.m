@@ -1,7 +1,7 @@
 function solve_widefield_qBRM_folder(folder_loc, varargin)
    
     
-   cd(folder_loc)
+   % cd(folder_loc)
    % load cmap for RGB image creation      
 
     cd(folder_loc)
